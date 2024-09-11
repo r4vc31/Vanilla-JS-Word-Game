@@ -25,20 +25,21 @@ cells.forEach(element => element.addEventListener("keydown", async function (eve
         document.querySelector(`[title='${previousCellTitle}']`).focus();
       }
     } else if (event.key === 'Enter') {
-      const word = getWordInRow();
-      if (word.length === 5) {
-        const isValid = await validateWord(word);
+      const userWord = getWordInRow();
+      if (userWord.length === 5) {
+        const isValid = await validateWord(userWord);
         if (isValid) {
-          showMessage('Word Valid. Coloring...')
-          compareWords(word);
+          compareWords(userWord);
           if (correctLetters === 5) {
             showMessage('Winner!')
             disableAfterWin();
+            return;
           } else if (attempt_number < 6) {
             showMessage('Try Again!')
           }
           else {
             showMessage('Loser?!')
+            messageElement.innerHTML = `The correct word is: ${word}`
             return;
           }
           attempt_number++;
@@ -61,7 +62,7 @@ cells.forEach(element => element.addEventListener("keydown", async function (eve
 }));
 
 async function getWord() {
-  const promise = await fetch('https://words.dev-apis.com/word-of-the-day');
+  const promise = await fetch('https://words.dev-apis.com/word-of-the-day?random=1');
   const result = await promise.json();
   return result.word;
 }
@@ -101,24 +102,33 @@ function getWordInRow() {
 }
 
 function compareWords(userWord) {
-  const letters = [...word];
+  const letters = word.split("");
+  correctLetters = 0;
   for (let index = 0; index < 5; index++) {
     let color = 'gray';
+    const cell = document.querySelector(`[title='r${attempt_number}-c${index + 1}']`);
 
     const letterUser = userWord[index].toUpperCase();
     const letterMachine = word[index].toUpperCase();
 
     if (letterUser === letterMachine) {
       color = 'green';
-      letters.splice(index, 1);
+      letters[index] = '';
       correctLetters++;
-    } else if (letters.includes(letterUser)) {
-      color = 'yellow';
-      letters.splice(letters.indexOf(letterUser), 1);
+    } 
+    cell.style.backgroundColor = color;
+  }
+
+  for (let index = 0; index < 5; index++) {
+    const cell = document.querySelector(`[title='r${attempt_number}-c${index + 1}']`);
+
+    const letterUser = userWord[index].toUpperCase();
+    
+    if (letters.includes(letterUser)) {
+      letters[index] = '';
+      cell.style.backgroundColor = 'yellow';
     }
 
-    const cell = document.querySelector(`[title='r${attempt_number}-c${index + 1}']`);
-    cell.style.backgroundColor = color;
     cell.disabled = true;
   }
 
@@ -126,7 +136,7 @@ function compareWords(userWord) {
 
 function disableAfterWin() {
   console.log(attempt_number, rows.length);
-  for (let index = attempt_number; index < rows.length + 1; index++) {
+  for (let index = attempt_number + 1; index < rows.length + 1; index++) {
     for (let j = 0; j < word.length; j++) {
       const cell = document.querySelector(`[title='r${index}-c${j + 1}']`);
       cell.disabled = true;
